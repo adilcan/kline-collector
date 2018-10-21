@@ -3,7 +3,8 @@ import requests
 import time
 import datetime
 import logging
-#import redis
+import redis
+import json
 
 __author__ = "Adilcan Eren"
 __license__ = "General Public License version 3"
@@ -11,28 +12,15 @@ __version__ = "0.0.1"
 __email__ = "adilcan@riseup.net"
 __status__ = "Development"
 
-logging.basicConfig(filename='fetch_klines.log',level=logging.DEBUG)
+logging.basicConfig(filename='logs.log',level=logging.DEBUG)
 
-#r = redis.Redis(
-#    host='localhost',
-#    port=port, 
-#    password='password')
+r = redis.Redis(
+    host='127.0.0.1',
+    port=6379, 
+    password='insert password here')
 
 launch_epoch = 1502942400000
 base_url = 'https://api.binance.com/api/v1/'
-
-class Kline(object):
-    open_time = 0
-    open_value = 0
-    high = 0
-    low = 0
-    close = 0
-    volume = 0
-    close_time = 0
-    quote_asset = 0
-    num_of_trades = 0 
-    buy_base_volume = 0
-    buy_quote_volume = 0
 
 def kline_range(start, end, step):
     while start <= end:
@@ -56,19 +44,10 @@ def fetch_data():
         if req.status_code == 200:
             klines = req.json()
             for x in klines:
-                k = Kline()
-                k.open_time = x[0]
-                k.open_value = x[1]
-                k.high = x[2]
-                k.low = x[3]
-                k.close = x[4]
-                k.volume = x[5]
-                k.close_time = x[6]
-                k.quote_asset = x[7]
-                k.num_of_trades = x[8]
-                k.buy_base_volume = x[9]
-                k.buy_quote_volume = x[10]
-                #r.set(k.open_time, k)
+                # Returned JSON has no property names.
+                k = {'open_time':x[0], 'open_value':x[1], 'high':x[2], 'low':x[3], 'close':x[4], 'volume':x[5], 'close_time':x[6], 'quote_asset':x[7], 'num_of_trades':x[8], 'buy_base_volume':x[9], 'buy_quote_volume':x[10]}
+                json_k = json.dumps(k)
+                r.set(x[0], json_k)
             time.sleep(60)
         elif req.status_code == 429 or 403:
             logging.warn('Violated Binance API rules, breaking... %s' % str(x))
